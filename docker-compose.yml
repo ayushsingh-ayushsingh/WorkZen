@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16
+    container_name: hono-template-app
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: unless-stopped
+    ports:
+      - "8000:8080"
+
+volumes:
+  pgdata:
