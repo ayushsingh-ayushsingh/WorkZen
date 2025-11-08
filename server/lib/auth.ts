@@ -5,13 +5,31 @@ import * as schema from "../db/schema";
 import { openAPI } from "better-auth/plugins";
 import { Resend } from "resend";
 import VerifyEmail from "../email/verify-email";
-import { organization } from "better-auth/plugins"
+import { organization } from "better-auth/plugins";
 import ForgotPasswordEmail from "../email/reset-password";
+import {
+  ac,
+  owner,
+  admin,
+  member,
+  payrollOfficer,
+} from "@/lib/auth/permissions";
 
 const resend = new Resend(process.env.RESEND_API_KEY as string);
 
 export const auth = betterAuth({
-  plugins: [openAPI(), organization() ],
+  plugins: [
+    openAPI(),
+    organization({
+      ac,
+      roles: {
+        owner,
+        admin,
+        member,
+        payrollOfficer,
+      },
+    }),
+  ],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema,

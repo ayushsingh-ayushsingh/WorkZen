@@ -15,6 +15,10 @@ import DashboardHome from "@/components/pages/dashboard-home";
 import { useEffect } from "react";
 import TestForm from "@/components/pages/form";
 import CreateOrganization from "@/components/pages/createOrganization";
+import Employees from "./components/pages/employees";
+import Settings from "./components/pages/settings";
+import Attendance from "./components/pages/attendance";
+import Timeoff from "./components/pages/timeoff";
 
 const routeTitles: Record<string, string> = {
   "/": "Home - MyApp",
@@ -58,8 +62,12 @@ export default function App() {
             <Route path="profile" element={<ProfilePage />} />
             <Route path="payment" element={<PaymentTest />} />
             <Route path="logout" element={<LogoutButton />} />
+            <Route path="timeoff" element={<Timeoff />} />
             <Route path="upload" element={<FileUploader />} />
             <Route path="form" element={<TestForm />} />
+            <Route path="employees" element={<Employees />} />
+            <Route path="attendance" element={<Attendance />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="/create-organization" element={<CreateOrganization />} />
         </Route>

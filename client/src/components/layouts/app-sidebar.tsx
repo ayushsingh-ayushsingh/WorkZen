@@ -1,12 +1,12 @@
 import {
-  AudioWaveform,
-  Command,
+  ClipboardPlus,
+  Clock8,
   Frame,
-  GalleryVerticalEnd,
-  Map,
-  PieChart,
+  Settings,
   SquareTerminal,
   Zap,
+  Users,
+  DollarSign,
 } from "lucide-react";
 import { NavMain } from "@/components/layouts/nav-main";
 import { NavProjects } from "@/components/layouts/nav-projects";
@@ -23,25 +23,24 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { useState, useEffect } from "react";
 
-// This is sample data.
 const data = {
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
+  // teams: [
+  //   {
+  //     name: "Acme Inc",
+  //     logo: GalleryVerticalEnd,
+  //     plan: "Enterprise",
+  //   },
+  //   {
+  //     name: "Acme Corp.",
+  //     logo: AudioWaveform,
+  //     plan: "Startup",
+  //   },
+  //   {
+  //     name: "Evil Corp.",
+  //     logo: Command,
+  //     plan: "Free",
+  //   },
+  // ],
   navMain: [
     {
       title: "Frequent",
@@ -85,19 +84,34 @@ const data = {
   ],
   projects: [
     {
-      name: "Design Engineering",
-      url: "#",
+      name: "Employees",
+      url: "/dashboard/employees",
+      icon: Users,
+    },
+    {
+      name: "Attendance",
+      url: "/dashboard/attendance",
       icon: Frame,
     },
     {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
+      name: "Time Off",
+      url: "/dashboard/timeoff",
+      icon: Clock8,
     },
     {
-      name: "Travel",
-      url: "#",
-      icon: Map,
+      name: "Payroll",
+      url: "/dashboard/payroll",
+      icon: DollarSign,
+    },
+    {
+      name: "Reports",
+      url: "/dashboard/reports",
+      icon: ClipboardPlus,
+    },
+    {
+      name: "Settings",
+      url: "/dashboard/settings",
+      icon: Settings,
     },
   ],
   // links: [
@@ -135,7 +149,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
@@ -147,9 +161,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <NavUser
             user={{
               name: user.name,
-              avatar:
-                user.image ||
-                "https://cdn.pixabay.com/photo/2025/10/12/16/36/sunset-glow-9890310_640.jpg",
+              avatar: user.image,
               email: user.email,
             }}
           />
