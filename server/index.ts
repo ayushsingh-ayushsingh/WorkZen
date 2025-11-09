@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { auth } from "@/lib/auth";
 import { logger } from "hono/logger";
-import { createOrder } from "@/db/queries/payments";
 import { handleFileUpload } from "@/db/queries/uploadFile";
 import { updateUserProfile } from "@/db/queries/userProfile";
 import {
@@ -13,11 +12,20 @@ import { db } from "./db/db";
 import { eq } from "drizzle-orm";
 import { user, member, organization } from "./db/schema";
 import {
+  approveLeave,
   checkAttendanceStatus,
+  getAllAttendanceLogs,
+  getAllLeaveLogs,
+  rejectLeave,
   updateAttendance,
 } from "./db/queries/attendance";
 import { saveUsersResume } from "./db/queries/saveUserResume";
 import { savePrivateBankInfo } from "./db/queries/privateBankInfo";
+import {
+  allUniqueEmployeesOfOrg,
+  getUserPayroll,
+  updatePayroll,
+} from "./db/queries/payroll";
 
 const app = new Hono();
 app.use(logger());
@@ -31,18 +39,6 @@ const router = app
   .on(["POST", "GET"], "/auth/*", (c) => auth.handler(c.req.raw))
   .get("/", (c) => {
     return c.text("Hello Hono! -> /api");
-  })
-  .post("/create-order", async (c) => {
-    try {
-      const { userId, amount, currency, receipt, notes } = await c.req.json();
-
-      const order = await createOrder(userId, amount, currency, receipt, notes);
-
-      return c.json(order);
-    } catch (error) {
-      console.error(error);
-      return c.json({ error: "Error creating order" }, 500);
-    }
   })
   .post("/upload", async (c) => {
     try {
@@ -102,7 +98,7 @@ const router = app
   })
   .post("/attendance", async (c) => {
     try {
-      const { userId, type, remarks } = await c.req.json();
+      const { userId, type, remarks, userName } = await c.req.json();
 
       if (!userId || !type) {
         return c.json(
@@ -111,7 +107,7 @@ const router = app
         );
       }
 
-      const result = await updateAttendance(userId, type, remarks);
+      const result = await updateAttendance(userId, userName, type, remarks);
 
       let message = "";
 
@@ -134,6 +130,94 @@ const router = app
       );
     }
   })
+  .post("/attendance-logs", async (c) => {
+    try {
+      const { userId } = await c.req.json();
+
+      if (!userId) {
+        return c.json({ success: false, message: "Missing userId" }, 400);
+      }
+
+      const result = await getAllAttendanceLogs();
+
+      return c.json({
+        success: true,
+        result,
+      });
+    } catch (error: any) {
+      console.error("Attendance error:", error);
+      return c.json(
+        { success: false, message: error.message || "Server error" },
+        500
+      );
+    }
+  })
+  .post("/leave-logs", async (c) => {
+    try {
+      const { userId } = await c.req.json();
+
+      if (!userId) {
+        return c.json({ success: false, message: "Missing userId" }, 400);
+      }
+
+      const result = await getAllLeaveLogs();
+
+      return c.json({
+        success: true,
+        result,
+      });
+    } catch (error: any) {
+      console.error("Attendance error:", error);
+      return c.json(
+        { success: false, message: error.message || "Server error" },
+        500
+      );
+    }
+  })
+  .post("/approve-leave", async (c) => {
+    try {
+      const { leaveId } = await c.req.json();
+
+      if (!leaveId) {
+        return c.json({ success: false, message: "Missing leaveId" }, 400);
+      }
+
+      const result = await approveLeave(leaveId);
+
+      return c.json({
+        success: true,
+        result,
+      });
+    } catch (error: any) {
+      console.error("Attendance error:", error);
+      return c.json(
+        { success: false, message: error.message || "Server error" },
+        500
+      );
+    }
+  })
+  .post("/reject-leave", async (c) => {
+    try {
+      const { leaveId } = await c.req.json();
+
+      if (!leaveId) {
+        return c.json({ success: false, message: "Missing leaveId" }, 400);
+      }
+
+      const result = await rejectLeave(leaveId);
+
+      return c.json({
+        success: true,
+        result,
+      });
+    } catch (error: any) {
+      console.error("Attendance error:", error);
+      return c.json(
+        { success: false, message: error.message || "Server error" },
+        500
+      );
+    }
+  })
   .get("/attendance-status/:userId", async (c) => {
     try {
       const { userId } = c.req.param();
@@ -144,9 +228,12 @@ const router = app
 
       const result = await checkAttendanceStatus(userId);
 
+      c.header("Cache-Control", "no-store, no-cache, must-revalidate");
+      c.header("Pragma", "no-cache");
+      c.header("Expires", "0");
       return c.json({
         success: true,
-        time: result.time,
+        ...result,
         memberStatus: result.status,
       });
     } catch (error: any) {
@@ -387,6 +474,35 @@ const router = app
       return c.json(result);
     } catch (err: any) {
       console.error("save-private-bank-info error:", err);
+      return c.json({ success: false, error: err.message }, 500);
+    }
+  })
+  .post("/payroll", async (c) => {
+    try {
+      const { userId, name, role, email, joinedAt, ctc } = await c.req.json();
+
+      const result = await updatePayroll(
+        userId,
+        name,
+        role,
+        email,
+        joinedAt,
+        ctc
+      );
+
+      return c.json(result);
+    } catch (err: any) {
+      console.error("Error:", err);
+      return c.json({ success: false, error: err.message }, 500);
+    }
+  })
+  .post("/payroll-user", async (c) => {
+    try {
+      const { userId } = await c.req.json();
+      const result = await getUserPayroll(userId);
+      return c.json(result);
+    } catch (err: any) {
+      console.error("Error:", err);
       return c.json({ success: false, error: err.message }, 500);
     }
   });

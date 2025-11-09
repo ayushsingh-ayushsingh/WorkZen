@@ -8,6 +8,11 @@ This system helps organizations manage **attendance, payroll, leaves, and users*
 
 ![Screenshot](./client/public/screenshot.png)
 
+---
+### Video Walkthrough
+
+![Video Walkthrough](./client/public/video.webm)
+
 ## 🚀 Features
 
 ### 🔐 Role-Based Access Control (RBAC)

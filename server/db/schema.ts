@@ -11,7 +11,7 @@ import {
 import { employeeCheckIn as employeeCheckInTable } from "./schema/checkIn";
 import { employeeAttendance as employeeAttendanceTable } from "./schema/attendance";
 
-import { payments as paymentsTable } from "./schema/payments";
+import { payroll as payrollTable } from "./schema/payroll";
 import { files as filesTable } from "./schema/files";
 import { relations } from "drizzle-orm";
 import { resume as resumeTable } from "./schema/resume";
@@ -25,7 +25,7 @@ export const organization = organizationTable;
 export const member = memberTable;
 export const invitation = invitationTable;
 
-export const payments = paymentsTable;
+export const payroll = payrollTable;
 
 export const files = filesTable;
 

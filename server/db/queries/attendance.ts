@@ -1,10 +1,11 @@
 import { db } from "@/db/db";
 import { employeeAttendance } from "../schema";
-import { desc, eq, lt, gte } from "drizzle-orm";
+import { desc, eq, asc, is } from "drizzle-orm";
 import { and } from "drizzle-orm";
 
 export async function updateAttendance(
   userId: string,
+  name: string,
   type: string,
   remarks?: string
 ) {
@@ -42,6 +43,7 @@ export async function updateAttendance(
         userId,
         type: "CHECKIN",
         status: "checked_in",
+        userName: name,
       })
       .returning();
 
@@ -75,6 +77,7 @@ export async function updateAttendance(
       .insert(employeeAttendance)
       .values({
         userId,
+        userName: name,
         type: "CHECKOUT",
         status: "checked_out",
       })
@@ -93,6 +96,7 @@ export async function updateAttendance(
       .insert(employeeAttendance)
       .values({
         userId,
+        userName: name,
         type: "LEAVE",
         status: "leave_applied",
         remarks: remarks ?? null,
@@ -109,92 +113,96 @@ export async function updateAttendance(
 export async function checkAttendanceStatus(userId: string) {
   if (!userId) throw new Error("Missing userId");
 
-  // --- IST timezone conversion ---
-  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-  const now = new Date();
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
-  const istNowMs = utcMs + IST_OFFSET_MS;
-  const istNow = new Date(istNowMs);
-
-  const year = istNow.getUTCFullYear();
-  const month = istNow.getUTCMonth();
-  const date = istNow.getUTCDate();
-
-  const startOfIstDayUtcMs = Date.UTC(year, month, date) - IST_OFFSET_MS;
-  const startOfNextIstDayUtcMs =
-    Date.UTC(year, month, date + 1) - IST_OFFSET_MS;
-
-  const startOfDay = new Date(startOfIstDayUtcMs);
-  const endOfDay = new Date(startOfNextIstDayUtcMs);
-
-  // --- Fetch today's attendance records ---
-  const todaysRows = await db
+  const latestRecordRows = await db
     .select()
     .from(employeeAttendance)
-    .where(
-      and(
-        eq(employeeAttendance.userId, userId),
-        gte(employeeAttendance.time, startOfDay),
-        lt(employeeAttendance.time, endOfDay)
-      )
-    )
-    .orderBy(desc(employeeAttendance.time));
+    .where(eq(employeeAttendance.userId, userId))
+    .orderBy(desc(employeeAttendance.time))
+    .limit(1);
 
-  // --- No record = ABSENT ---
-  if (!todaysRows || todaysRows.length === 0) {
+  const latest = latestRecordRows[0];
+
+  if (!latest) {
     return {
       status: "ABSENT" as const,
-      firstCheckIn: null,
-      lastCheckOut: null,
-      totalHoursToday: 0,
-    };
-  }
-
-  // --- Latest record decides the status ---
-  const latest = todaysRows[0];
-
-  if (latest.type === "LEAVE") {
-    return {
-      status: "LEAVE" as const,
-      firstCheckIn: null,
-      lastCheckOut: null,
-      totalHoursToday: 0,
-      remarks: latest.remarks ?? null,
-      time: latest.time ?? null,
+      lastActionTime: null,
+      remarks: null,
     };
   }
 
   if (latest.type === "CHECKIN") {
-    const firstCheckIn =
-      todaysRows.filter((r) => r.type === "CHECKIN").pop()?.time ?? latest.time;
-
     return {
       status: "PRESENT" as const,
-      firstCheckIn,
-      lastCheckOut: null,
-      totalHoursToday: 0,
-      time: latest.time,
+      lastActionTime: latest.time,
+      remarks: null,
     };
   }
 
-  if (latest.type === "CHECKOUT") {
-    const firstCheckIn =
-      todaysRows.find((r) => r.type === "CHECKIN")?.time ?? null;
-    const lastCheckOut = latest.time;
-
+  if (latest.type === "LEAVE") {
     return {
-      status: "ABSENT" as const,
-      firstCheckIn,
-      lastCheckOut,
-      totalHoursToday: 0,
-      time: lastCheckOut,
+      status: "LEAVE" as const,
+      lastActionTime: latest.time,
+      remarks: latest.remarks ?? null,
     };
   }
 
   return {
     status: "ABSENT" as const,
-    firstCheckIn: null,
-    lastCheckOut: null,
-    totalHoursToday: 0,
+    lastActionTime: latest.time,
+    remarks: null,
   };
+}
+
+export async function getAllAttendanceLogs() {
+  const res = await db
+    .select()
+    .from(employeeAttendance)
+    .orderBy(asc(employeeAttendance.userName), desc(employeeAttendance.time));
+
+  return res;
+}
+
+export async function getAllLeaveLogs() {
+  const res = await db
+    .select()
+    .from(employeeAttendance)
+    .where(
+      and(
+        eq(employeeAttendance.type, "LEAVE"),
+        eq(employeeAttendance.isApproved, false)
+      )
+    )
+    .orderBy(asc(employeeAttendance.userName), desc(employeeAttendance.time));
+
+  return res;
+}
+
+export async function approveLeave(id: string) {
+  try {
+    const result = await db
+      .update(employeeAttendance)
+      .set({ isApproved: true })
+      .where(eq(employeeAttendance.id, id))
+      .returning();
+
+    return result;
+  } catch (error) {
+    console.error("Error approving leave:", error);
+    throw new Error("Failed to approve leave");
+  }
+}
+
+export async function rejectLeave(id: string) {
+  try {
+    const result = await db
+      .update(employeeAttendance)
+      .set({ isApproved: false })
+      .where(eq(employeeAttendance.id, id))
+      .returning();
+
+    return result;
+  } catch (error) {
+    console.error("Error approving leave:", error);
+    throw new Error("Failed to approve leave");
+  }
 }
