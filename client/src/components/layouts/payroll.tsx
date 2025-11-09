@@ -101,7 +101,7 @@ export default function CreatePayrollReport() {
         <TableBody>
           {membersList.length > 0 ? (
             membersList.map((member) => (
-              <TableRow key={member.id}>
+              <TableRow key={member.user?.id}>
                 <TableCell className="font-medium">
                   {member.user?.name}
                 </TableCell>
@@ -155,7 +155,7 @@ export default function CreatePayrollReport() {
                                   email: member.user?.email,
                                   joinedAt: member.createdAt,
                                   ctc: parseInt(
-                                    ctcValues[member.id] || "0",
+                                    ctcValues[member.user.id] || "0",
                                     10
                                   ),
                                 },

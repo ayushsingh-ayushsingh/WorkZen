@@ -272,14 +272,16 @@ function DashboardHome() {
 
   return (
     <div className="space-y-6 p-4">
-      {(currentUserRole === "admin" || currentUserRole === "owner") && (
-        <div className="flex justify-between">
-          <AddNewUserDialog organizationId={orgId} />
-          <Button size={"icon-lg"} onClick={init}>
-            <RefreshCcw />
-          </Button>
+      <div className="flex justify-between">
+        <div>
+          {(currentUserRole === "admin" || currentUserRole === "owner") && (
+            <AddNewUserDialog organizationId={orgId} />
+          )}
         </div>
-      )}
+        <Button size={"icon-lg"} onClick={init}>
+          <RefreshCcw />
+        </Button>
+      </div>
       <div className="w-full h-full grid lg:grid-cols-2 xl:grid-cols-4 sm:grid-cols-2 gap-4 grid-cols-1 ">
         {membersList.map((member) => {
           return (
