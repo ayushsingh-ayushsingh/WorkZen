@@ -11,7 +11,7 @@ This system helps organizations manage **attendance, payroll, leaves, and users*
 ---
 ### Video Walkthrough
 
-![Video Walkthrough](./client/public/video.webm)
+![Video Walkthrough](./client/public/video.mp4)
 
 ## 🚀 Features
 
