@@ -13,12 +13,12 @@ export default function Features() {
       <div className="mx-auto max-w-5xl space-y-8 px-6 md:space-y-16">
         <div className="relative z-10 mx-auto max-w-xl space-y-6 text-center md:space-y-12">
           <h2 className="text-balance text-4xl font-medium lg:text-5xl">
-            The foundation for creative teams management
+            Everything You Need for Modern HR Management
           </h2>
           <p>
-            Lyra is evolving to be more than just the models. It supports an
-            entire to the APIs and platforms helping developers and businesses
-            innovate.
+            Manage employees, attendance, leaves, and payroll all in one place.
+            Efficient, secure, and easy to use — designed for HR, Admins,
+            Payroll Managers, and Employees.
           </p>
         </div>
 
@@ -75,7 +75,7 @@ export default function Features() {
             <div className="flex items-center gap-2">
               <Sparkles className="size-4" />
 
-              <h3 className="text-sm font-medium">Built for AI</h3>
+              <h3 className="text-sm font-medium">Built for you</h3>
             </div>
             <p className="text-sm">
               It supports helping developers and businesses innovate.

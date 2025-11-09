@@ -66,7 +66,7 @@ export default function HeroSection() {
                   className="hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-zinc-950/5 transition-colors duration-300 dark:border-t-white/5 dark:shadow-zinc-950"
                 >
                   <span className="text-foreground text-sm">
-                    Introducing Support for AI Models
+                    Introducing WorkZen
                   </span>
                   <span className="dark:border-background block h-4 w-0.5 border-l bg-white dark:bg-zinc-700"></span>
 
@@ -89,7 +89,7 @@ export default function HeroSection() {
                 as="h1"
                 className="mx-auto mt-8 max-w-4xl text-balance text-5xl max-md:font-semibold md:text-7xl lg:mt-16 xl:text-[5.25rem]"
               >
-                Modern Solutions for Customer Engagement
+                Modern Solutions for HRMS
               </TextEffect>
               <TextEffect
                 per="line"
@@ -99,8 +99,7 @@ export default function HeroSection() {
                 as="p"
                 className="mx-auto mt-8 max-w-2xl text-balance text-lg"
               >
-                Highly customizable components for building modern websites and
-                applications that look and feel the way you mean it.
+                Manage employees, attendance, leaves, and payroll all in one place. Efficient, secure, and easy to use.
               </TextEffect>
 
               <AnimatedGroup
@@ -127,7 +126,7 @@ export default function HeroSection() {
                     className="rounded-xl px-5 text-base"
                   >
                     <Link to="/dashboard">
-                      <span className="text-nowrap">Start Building</span>
+                      <span className="text-nowrap">Dashboard</span>
                     </Link>
                   </Button>
                 </div>
@@ -139,7 +138,7 @@ export default function HeroSection() {
                   className="h-10.5 rounded-xl px-5"
                 >
                   <Link to="#link">
-                    <span className="text-nowrap">Request a demo</span>
+                    <span className="text-nowrap">Learn More</span>
                   </Link>
                 </Button>
               </AnimatedGroup>
@@ -162,14 +161,14 @@ export default function HeroSection() {
               <div className="inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-background relative mx-auto max-w-6xl overflow-hidden rounded-4xl border p-4 shadow-lg shadow-zinc-950/15 ring-1">
                 <img
                   className="bg-background aspect-15/8 relative hidden rounded-2xl dark:block object-cover"
-                  src="/placeholder.jpg"
+                  src="/screenshot.png"
                   alt="app screen"
                   width="2700"
                   height="1440"
                 />
                 <img
                   className="z-2 border-border/25 aspect-15/8 relative rounded-2xl border dark:hidden object-cover"
-                  src="/placeholder.jpg"
+                  src="/screenshot.png"
                   alt="app screen"
                   width="2700"
                   height="1440"

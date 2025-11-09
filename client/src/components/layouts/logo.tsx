@@ -20,7 +20,7 @@ export const Logo = () => {
         <path d="m6.804 9 10.392 6" />
       </svg>
       <span>
-        Ayush Singh
+        WorkZen
       </span>
     </div>
   );
