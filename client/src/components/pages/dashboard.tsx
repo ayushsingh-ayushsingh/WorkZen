@@ -12,6 +12,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { AppSidebar } from "@/components/layouts/app-sidebar";
 import {
@@ -19,8 +27,6 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  // BreadcrumbPage,
-  // BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -31,14 +37,14 @@ import {
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
 import { client } from "@/lib/hono-client";
-import { Textarea } from "../ui/textarea";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState("");
+  const [userName, setUserName] = useState("");
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
-  const [remarks, setRemarks] = useState("An application for leave.");
+  const [remarks, setRemarks] = useState("SICK");
 
   useEffect(() => {
     const checkIsCheckedIn = async () => {
@@ -46,29 +52,40 @@ export default function Dashboard() {
         const { data } = await authClient.getSession();
         if (data?.user) {
           setUserId(data.user.id);
+          setUserName(data.user.name);
         } else {
           navigate("/login");
         }
 
         if (data) {
-          const res = await client.api["attendance-status"][":userId"].$get({
-            param: { userId: data.user.id },
-          });
+          const res = await client.api["attendance-status"][":userId"].$get(
+            {
+              param: { userId: data.user.id },
+            },
+            {
+              headers: {
+                "Cache-Control": "no-cache",
+                Pragma: "no-cache",
+              },
+            }
+          );
 
           const userAttendanceData = await res.json();
-
           if (userAttendanceData.success) {
-            setIsCheckedIn(userAttendanceData.memberStatus === "PRESENT");
-            setCheckInTime(
-              new Date(userAttendanceData.time).toLocaleTimeString()
-            );
+            const isPresent = userAttendanceData.memberStatus === "PRESENT";
+            setIsCheckedIn(isPresent);
+
+            if (isPresent && userAttendanceData.lastActionTime) {
+              setCheckInTime(
+                new Date(userAttendanceData.lastActionTime).toLocaleTimeString()
+              );
+            } else {
+              setCheckInTime(null);
+            }
           }
         }
       } catch (err) {
         console.error(`Error fetching status for ${userId}:`, err);
-        return {
-          status: "ERROR",
-        };
       }
     };
     checkIsCheckedIn();
@@ -78,7 +95,7 @@ export default function Dashboard() {
     try {
       if (!userId) return toast.error("User not found");
       const res = await client.api.attendance.$post({
-        json: { userId, type: "CHECKIN" },
+        json: { userId, userName, type: "CHECKIN" },
       });
 
       const data = await res.json();
@@ -97,7 +114,7 @@ export default function Dashboard() {
     try {
       if (!userId) return toast.error("User not found");
       const res = await client.api.attendance.$post({
-        json: { userId, type: "CHECKOUT" },
+        json: { userId, userName, type: "CHECKOUT" },
       });
 
       const data = await res.json();
@@ -119,6 +136,7 @@ export default function Dashboard() {
       const res = await client.api.attendance.$post({
         json: {
           userId,
+          userName,
           type: "LEAVE",
           remarks: remarks || "An application for leave.",
         },
@@ -147,10 +165,6 @@ export default function Dashboard() {
                 <BreadcrumbItem>
                   <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
                 </BreadcrumbItem>
-                {/* <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                </BreadcrumbItem> */}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
@@ -177,13 +191,25 @@ export default function Dashboard() {
                       <div className="grid gap-4">
                         <div className="grid gap-3">
                           <Label htmlFor="name-1">Leave Application</Label>
-                          <Textarea
-                            id="name-1"
-                            name="name"
-                            value={remarks}
-                            placeholder="Start writing here..."
-                            onChange={(e) => setRemarks(e.target.value)}
-                          />
+                          <Select
+                            value={remarks || ""}
+                            onValueChange={(remark) => setRemarks(remark)}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select leave type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                <SelectItem value="PAID">
+                                  Paid time leave
+                                </SelectItem>
+                                <SelectItem value="SICK">Sick Leave</SelectItem>
+                                <SelectItem value="UNPAID">
+                                  Unpaid Leave
+                                </SelectItem>
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                       <DialogFooter>

@@ -1,13 +1,4 @@
 import { client } from "@/lib/hono-client";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useEffect, useState } from "react";
 import {
   Table,
@@ -18,94 +9,116 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { authClient } from "@/lib/auth-client";
-import { toast } from "sonner";
+import { RefreshCcw } from "lucide-react";
+import { Button } from "../ui/button";
+
+// Define the shape of a single log entry for better type safety
+interface AttendanceLog {
+  id: string;
+  userId: string;
+  userName: string;
+  type: "CHECKIN" | "CHECKOUT" | "LEAVE";
+  time: string; // ISO Date String
+  status: string;
+  remarks: string | null;
+}
 
 const Settings = () => {
-  const [membersList, setMembersList] = useState<any[]>([]);
+  const [logs, setLogs] = useState<AttendanceLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    getMembersOrganizationByUserId();
-  }, []);
-
-  const getMembersOrganizationByUserId = async () => {
+  const fetchAttendanceLogs = async () => {
+    setIsLoading(true);
     try {
-      const user = await authClient.getSession();
-      if (!user.data) {
-        toast.error("Try logging in again!");
-      } else {
-        const res = await client.api["organisation-members-by-user-id"].$post({
-          json: {
-            userId: user.data.user.id,
-          },
-        });
+      const res = await client.api["attendance-logs"].$post({
+        json: {
+          userId: "ayushsingh",
+        },
+      });
+      const data = await res.json();
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.data?.members) {
-            setMembersList(data.data.members);
-          }
-        }
+      const logsArray = (data.logs || data.result) as
+        | AttendanceLog[]
+        | undefined;
+
+      if (data.success && Array.isArray(logsArray)) {
+        setLogs(logsArray);
+      } else {
+        setLogs([]);
+        console.error(
+          "API response success: ",
+          data.success,
+          "Logs array is missing or invalid: ",
+          data
+        );
       }
     } catch (error) {
-      console.error("Failed to fetch organization:", error);
+      console.error("Error fetching logs:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchAttendanceLogs();
+  }, []);
+
   return (
     <div className="p-6">
+      <div className="w-full flex justify-end">
+        <Button onClick={fetchAttendanceLogs}>
+          <RefreshCcw />
+        </Button>
+      </div>
       <Table className="max-w-5xl w-full mx-auto">
         <TableCaption>
-          A list of all the members in your organization.
+          Chronological list of all attendance events, sorted by user name.
         </TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead>User Id</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Joined At</TableHead>
-            <TableHead>Update Role</TableHead>
+            <TableHead>Employee</TableHead>
+            <TableHead>Event Type</TableHead>
+            <TableHead>Time</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Remarks</TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody>
-          {membersList.length > 0 ? (
-            membersList.map((member) => (
-              <TableRow key={member.id}>
-                <TableCell className="font-medium">
-                  <div className="max-w-24 truncate">{member.user?.id}</div>
-                </TableCell>
-                <TableCell className="font-medium">
-                  {member.user?.name}
-                </TableCell>
-                <TableCell>{member.user?.email}</TableCell>
+          {isLoading ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center">
+                Loading attendance data...
+              </TableCell>
+            </TableRow>
+          ) : logs.length > 0 ? (
+            logs.map((log) => (
+              <TableRow key={log.id}>
+                <TableCell className="font-medium">{log.userName}</TableCell>
                 <TableCell>
-                  {new Date(member.createdAt).toLocaleDateString()}
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-semibold text-background ${
+                      log.type === "CHECKIN"
+                        ? "bg-primary"
+                        : log.type === "CHECKOUT"
+                          ? "bg-destructive"
+                          : "bg-yellow-400"
+                    }`}
+                  >
+                    {log.type}
+                  </span>
                 </TableCell>
-                <TableCell>
-                  <Select>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select Role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Fruits</SelectLabel>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="member">Member</SelectItem>
-                        <SelectItem value="owner">Owner</SelectItem>
-                        <SelectItem value="payrollManager">
-                          Payroll Manager
-                        </SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                <TableCell>{new Date(log.time).toLocaleTimeString()}</TableCell>
+                <TableCell>{new Date(log.time).toLocaleDateString()}</TableCell>
+                <TableCell className="text-muted-foreground italic max-w-xs truncate">
+                  {log.remarks || "N/A"}
                 </TableCell>
               </TableRow>
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={4} className="text-center">
-                No members found.
+              <TableCell colSpan={5} className="text-center">
+                No attendance logs found.
               </TableCell>
             </TableRow>
           )}

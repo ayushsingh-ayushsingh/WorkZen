@@ -1,5 +1,4 @@
 import { client } from "@/lib/hono-client";
-import { Button } from "../ui/button";
 import { useEffect, useState } from "react";
 import {
   Table,
@@ -12,10 +11,12 @@ import {
 } from "@/components/ui/table";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
+import { Button } from "../ui/button";
+import { RefreshCcw } from "lucide-react";
 
 export default function Employees() {
   const [membersList, setMembersList] = useState<any[]>([]);
-  const [orgId, setOrgId] = useState("");
+  const [_orgId, setOrgId] = useState("");
 
   useEffect(() => {
     getMembersOrganizationByUserId();
@@ -48,6 +49,11 @@ export default function Employees() {
 
   return (
     <div className="p-6">
+      <div className="w-full flex justify-end">
+        <Button onClick={getMembersOrganizationByUserId}>
+          <RefreshCcw />
+        </Button>
+      </div>
       <Table className="max-w-5xl w-full mx-auto">
         <TableCaption>
           A list of all the members in your organization.
@@ -58,7 +64,6 @@ export default function Employees() {
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Joined At</TableHead>
-            <TableHead>Action</TableHead>
           </TableRow>
         </TableHeader>
 
@@ -73,26 +78,6 @@ export default function Employees() {
                 <TableCell>{member.role}</TableCell>
                 <TableCell>
                   {new Date(member.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant={"destructive"}
-                    onClick={async () => {
-                      const { data, error } =
-                        await authClient.organization.removeMember({
-                          memberIdOrEmail: member.user?.email,
-                          organizationId: orgId,
-                        });
-                      if (data) {
-                        toast.success("Removed employee successfully");
-                      }
-                      if (error) {
-                        toast.error("Failed to remove employee / Unauthorized");
-                      }
-                    }}
-                  >
-                    Remove
-                  </Button>
                 </TableCell>
               </TableRow>
             ))

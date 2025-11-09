@@ -62,6 +62,52 @@ function DashboardHome() {
     return [];
   };
 
+  const fetchMemberStatuses = async (membersList: any[]) => {
+    try {
+      const updatedMembers = await Promise.all(
+        membersList.map(async (member: any) => {
+          try {
+            const res = await client.api["attendance-status"][":userId"].$get({
+              param: { userId: member.user?.id },
+            });
+            const data = await res.json();
+
+            if (data.success) {
+              return {
+                ...member,
+                status: data.memberStatus ?? "ABSENT",
+              };
+            }
+          } catch (err) {
+            console.error(`Error fetching status for ${member.user?.id}:`, err);
+            return {
+              ...member,
+              status: "ERROR",
+            };
+          }
+        })
+      );
+
+      setMembersList(updatedMembers);
+
+      const session = await authClient.getSession();
+      if (!session.data) {
+        toast.error("Try logging in again!");
+        return;
+      }
+
+      const userData = session.data.user;
+
+      const userRole = updatedMembers.find(
+        (member) => member.user?.id === userData.id
+      );
+      setCurrentUserRole(userRole.role);
+    } catch (error) {
+      console.error("Error fetching member statuses:", error);
+      toast.error("Failed to update member statuses");
+    }
+  };
+
   const AddNewUserDialog = ({ organizationId }: { organizationId: string }) => {
     const [values, setValues] = useState({
       name: "",
@@ -217,52 +263,6 @@ function DashboardHome() {
         </DialogContent>
       </Dialog>
     );
-  };
-
-  const fetchMemberStatuses = async (membersList: any[]) => {
-    try {
-      const updatedMembers = await Promise.all(
-        membersList.map(async (member: any) => {
-          try {
-            const res = await client.api["attendance-status"][":userId"].$get({
-              param: { userId: member.user?.id },
-            });
-            const data = await res.json();
-
-            if (data.success) {
-              return {
-                ...member,
-                status: data.memberStatus ?? "ABSENT",
-              };
-            }
-          } catch (err) {
-            console.error(`Error fetching status for ${member.user?.id}:`, err);
-            return {
-              ...member,
-              status: "ERROR",
-            };
-          }
-        })
-      );
-
-      setMembersList(updatedMembers);
-
-      const session = await authClient.getSession();
-      if (!session.data) {
-        toast.error("Try logging in again!");
-        return;
-      }
-
-      const userData = session.data.user;
-
-      const userRole = updatedMembers.find(
-        (member) => member.user?.id === userData.id
-      );
-      setCurrentUserRole(userRole.role);
-    } catch (error) {
-      console.error("Error fetching member statuses:", error);
-      toast.error("Failed to update member statuses");
-    }
   };
 
   const init = async () => {

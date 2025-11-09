@@ -1,6 +1,5 @@
-import { client } from "@/lib/hono-client";
-import { Button } from "../ui/button";
 import { useEffect, useState } from "react";
+import { Button } from "../ui/button";
 import {
   Table,
   TableBody,
@@ -10,42 +9,98 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { authClient } from "@/lib/auth-client";
+import { client } from "@/lib/hono-client";
 import { toast } from "sonner";
+import { RefreshCcw } from "lucide-react";
 
-export default function Timeoff() {
-  const [membersList, setMembersList] = useState<any[]>([]);
+interface LeaveRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  type: string;
+  time: string;
+  status: string;
+  remarks: string | null;
+}
 
-  useEffect(() => {
-    getMembersOrganizationByUserId();
-  }, []);
+export default function TimeOff() {
+  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const getMembersOrganizationByUserId = async () => {
+  const fetchLeaves = async () => {
+    setIsLoading(true);
     try {
-      const user = await authClient.getSession();
-      if (!user.data) {
-        toast.error("Try logging in again!");
-      } else {
-        const res = await client.api["organisation-members-by-user-id"].$post({
-          json: {
-            userId: user.data.user.id,
-          },
-        });
+      const res = await client.api["leave-logs"].$post({
+        json: { userId: "ayushsingh" },
+      });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.data?.members) {
-            setMembersList(data.data.members);
-          }
-        }
+      const data = await res.json();
+      const logsArray = (data.logs || data.result) as
+        | LeaveRequest[]
+        | undefined;
+
+      if (data.success && Array.isArray(logsArray)) {
+        // Filter only leave requests
+        setLeaves(logsArray.filter((l) => l.type === "LEAVE"));
+      } else {
+        setLeaves([]);
       }
-    } catch (error) {
-      console.error("Failed to fetch organization:", error);
+    } catch (err) {
+      console.error("Failed to fetch leaves:", err);
+      setLeaves([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleApprove = async (leaveId: string) => {
+    try {
+      const res = await client.api["approve-leave"].$post({
+        json: { leaveId },
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Leave approved!");
+        fetchLeaves(); // refresh table
+      } else {
+        toast.error(data.message || "Failed to approve leave");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to approve leave");
+    }
+  };
+
+  const handleReject = async (leaveId: string) => {
+    try {
+      const res = await client.api["reject-leave"].$post({
+        json: { leaveId },
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Leave rejected!");
+        fetchLeaves(); // refresh table
+      } else {
+        toast.error(data.message || "Failed to reject leave");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to reject leave");
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaves();
+  }, []);
+
   return (
     <div className="p-6">
+      <div className="w-full flex justify-end">
+        <Button onClick={fetchLeaves}>
+          <RefreshCcw />
+        </Button>
+      </div>
+      {/* Days banner */}
       <div className="max-w-5xl mx-auto grid grid-cols-2 gap-4 my-6">
         <div className="text-center bg-muted p-4 rounded-lg">
           <div className="text-muted-foreground font-bold">Paid Time Off</div>
@@ -56,45 +111,61 @@ export default function Timeoff() {
           <div className="text-3xl">7 Days</div>
         </div>
       </div>
+
+      {/* Leaves Table */}
       <Table className="max-w-5xl w-full mx-auto">
-        <TableCaption>
-          A list of all the members in your organization.
-        </TableCaption>
+        <TableCaption>List of leave requests from employees</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Start Date</TableHead>
-            <TableHead>End Date</TableHead>
-            <TableHead>Time Off Type</TableHead>
+            <TableHead>Employee</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Remarks</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Action</TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody>
-          {membersList.length > 0 ? (
-            membersList.map((member) => (
-              <TableRow key={member.id}>
-                <TableCell className="font-medium">
-                  {member.user?.name}
-                </TableCell>
-                <TableCell>{member.user?.email}</TableCell>
+          {isLoading ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center">
+                Loading leave requests...
+              </TableCell>
+            </TableRow>
+          ) : leaves.length > 0 ? (
+            leaves.map((leave) => (
+              <TableRow key={leave.id}>
+                <TableCell className="font-medium">{leave.userName}</TableCell>
+                <TableCell>{leave.type}</TableCell>
                 <TableCell>
-                  {new Date(member.createdAt).toLocaleDateString()}
+                  {new Date(leave.time).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="text-muted-foreground italic max-w-xs truncate">
+                  {leave.remarks || "N/A"}
                 </TableCell>
                 <TableCell>
-                  {new Date(member.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  {new Date(member.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  {new Date(member.createdAt).toLocaleDateString()}
+                  {leave.status === "approved" ? (
+                    <span className="text-green-600 font-semibold">
+                      Approved
+                    </span>
+                  ) : leave.status === "rejected" ? (
+                    <span className="text-red-600 font-semibold">Rejected</span>
+                  ) : (
+                    <span className="text-yellow-600 font-semibold">
+                      Pending
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="space-x-2">
-                  <Button size={"sm"}>Approve</Button>
-                  <Button variant={"destructive"} size={"sm"}>
+                  <Button size="sm" onClick={() => handleApprove(leave.id)}>
+                    Approve
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleReject(leave.id)}
+                  >
                     Reject
                   </Button>
                 </TableCell>
@@ -102,8 +173,8 @@ export default function Timeoff() {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={4} className="text-center">
-                No members found.
+              <TableCell colSpan={6} className="text-center">
+                No leave requests found.
               </TableCell>
             </TableRow>
           )}
